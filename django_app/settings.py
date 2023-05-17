@@ -36,7 +36,7 @@ SECRET_KEY = 'django-insecure-icyd30p^0*2awmh0cg#ts4xqg1h-litj41x4pdgo9-f4suj#-(
 # SECURITY WARNING: don't run with debug turned on in production!
 DEBUG = True
 
-ALLOWED_HOSTS = []
+ALLOWED_HOSTS = ['8000-email2ify-django-acmep6xxsp.us2.codeanyapp.com']
 
 
 # Application definition
@@ -50,7 +50,8 @@ INSTALLED_APPS = [
     'cloudinary_storage',
     'django.contrib.staticfiles',
     'cloudinary',
-     'profiless',
+    'rest_framework'
+    'profiless',
   
 ]
 
