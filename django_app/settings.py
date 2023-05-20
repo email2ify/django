@@ -55,6 +55,7 @@ INSTALLED_APPS = [
     'profiless',
     'comments',
     'likes',
+    'followers',
     
   
 ]
