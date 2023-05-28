@@ -1,58 +1,35 @@
-from django.db.models import Count
-from rest_framework import generics, filters
-from django_filters.rest_framework import DjangoFilterBackend
-from django_app.permissions import IsOwnerOrReadOnly
+from rest_framework import serializers
 from .models import Profile
-from .serializers import ProfileSerializer
+from followers.models import Follower
 
 
-class ProfileList(generics.ListAPIView):
-    """
-    List all profiles.
-    No create view as profile creation is handled by django signals.
-    """
-    queryset = Profile.objects.annotate(
-        posts_count=Count('owner__post', distinct=True),
-        followers_count=Count('owner__followed', distinct=True),
-        following_count=Count('owner__following', distinct=True)
-    ).order_by('-created_at')
-    serializer_class = ProfileSerializer
-    filter_backends = [
-        filters.OrderingFilter,
-        DjangoFilterBackend,
-    ]
-    filterset_fields = [
-        'owner__following__followed__profile',
-        'owner__followed__owner__profile',
-     
+class ProfileSerializer(serializers.ModelSerializer):
+    owner = serializers.ReadOnlyField(source='owner.username')
+    is_owner = serializers.SerializerMethodField()
+    following_id = serializers.SerializerMethodField()
+    posts_count = serializers.ReadOnlyField()
+    followers_count = serializers.ReadOnlyField()
+    following_count = serializers.ReadOnlyField()
 
-    ]
+    def get_is_owner(self, obj):
+        request = self.context['request']
+        return request.user == obj.owner
 
-    """ 
-    'owner__following__followed__profile',
-    To get the user post feed by their profile  id,
-    
-    'owner__followed__owner__profile',
-       (all profiles that are followed by a profile, given its id)
-    """
-   
-    ordering_fields = [
-        'posts_count',
-        'followers_count',
-        'following_count',
-        'owner__following__created_at',
-        'owner__followed__created_at',
-    ]
+    def get_following_id(self, obj):
+        user = self.context['request'].user
+        if user.is_authenticated:
+            following = Follower.objects.filter(
+                owner=user, followed=obj.owner
+            ).first()
+            # print(following)
+            return following.id if following else None
+        return None
 
-
-class ProfileDetail(generics.RetrieveUpdateAPIView):
-    """
-    Retrieve or update a profile if you're the owner.
-    """
-    permission_classes = [IsOwnerOrReadOnly]
-    queryset = Profile.objects.annotate(
-        posts_count=Count('owner__post', distinct=True),
-        followers_count=Count('owner__followed', distinct=True),
-        following_count=Count('owner__following', distinct=True)
-    ).order_by('-created_at')
+    class Meta:
+        model = Profile
+        fields = [
+            'id', 'owner', 'created_at', 'updated_at', 'name',
+            'content', 'image', 'is_owner', 'following_id',
+            'posts_count', 'followers_count', 'following_count',
+        ]
     serializer_class = ProfileSerializer
